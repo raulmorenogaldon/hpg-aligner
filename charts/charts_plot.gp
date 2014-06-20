@@ -6,7 +6,9 @@ set output "total.png"
 set xlabel "Threads"
 set ylabel "Time (s)"
 set title "Time to process"
-plot 	"<awk '{if($1 == 1){print $2 \" \" $3}}' cook.dat" w lp t "Total" 
+set yrange [0:] writeback
+plot 	"<awk '{if($1 == 0){print $2 \" \" $3}}' cook.dat" w lp t "Total" 
+set yrange [*:*]
 
 set output "framework.png"
 set xlabel "Threads"
@@ -28,7 +30,9 @@ set term x11 0
 set xlabel "Threads"
 set ylabel "Time (s)"
 set title "Time to process"
-plot 	"<awk '{if($1 == 1){print $2 \" \" $3}}' cook.dat" w lp t "Total" 
+set yrange [0:] writeback
+plot 	"<awk '{if($1 == 0){print $2 \" \" $3}}' cook.dat" w lp t "Total" 
+set yrange [*:*]
 
 set term x11 1
 set xlabel "Threads"
