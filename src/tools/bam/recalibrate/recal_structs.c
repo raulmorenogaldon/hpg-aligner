@@ -682,6 +682,13 @@ recal_fprint_info(const recal_info_t *data, const char *path)
 		fprintf(fp, "\n");
 	}
 
+	fprintf(fp, "==============================\nREPORTED QUALITY VS EMPIRICAL:\n");
+	for(i = 0; i < n_quals; i++)
+	{
+		fprintf(fp, "%3d %3.0f \n",
+				i, data->qual_empirical_Q[i]);
+	}
+
 	fclose(fp);
 
 	return NO_ERROR;
