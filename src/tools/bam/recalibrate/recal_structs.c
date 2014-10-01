@@ -573,6 +573,7 @@ recal_fprint_info(const recal_info_t *data, const char *path)
 	int n_quals = data->num_quals;
 	int n_cycles = data->num_cycles;
 	int n_dinuc = data->num_dinuc;
+	double *v_cycles;
 
 	fp = fopen(path, "w+");
 
@@ -685,9 +686,27 @@ recal_fprint_info(const recal_info_t *data, const char *path)
 	fprintf(fp, "==============================\nREPORTED QUALITY VS EMPIRICAL:\n");
 	for(i = 0; i < n_quals; i++)
 	{
-		fprintf(fp, "%3d %3.0f \n",
+		fprintf(fp, "%3d %3.2f \n",
 				i, data->qual_empirical_Q[i]);
 	}
+
+	fprintf(fp, "==============================\nQUAL-CYCLE ACCURACY:\n");
+	v_cycles = (double *)malloc(n_cycles * sizeof(double));
+	memset(v_cycles, 0, n_cycles * sizeof(double));
+	for(j = 0; j < n_cycles; j++)
+	{
+		for(i = 0; i < n_quals; i++)
+		{
+			if(data->qual_cycle_empirical_Q[i * n_cycles + j] != 0)
+				v_cycles[j] += (data->qual_cycle_empirical_Q[i * n_cycles + j] - (double)i);	/* Empirical quality - reported quality */
+		}
+	}
+	for(j = 0; j < n_cycles; j++)
+	{
+		fprintf(fp, "%3d %3.3f \n",
+						j, v_cycles[j]);
+	}
+	free(v_cycles);
 
 	fclose(fp);
 
