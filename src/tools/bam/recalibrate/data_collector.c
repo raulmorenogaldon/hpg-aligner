@@ -19,8 +19,8 @@
 
 #ifdef CHECK_DUPLICATES
 	static char *ult_seq = NULL;
-	static int l_ult_seq = 0;
-	static int pos_ult_seq;
+	static U_CYCLES l_ult_seq = 0;
+	static uint64_t pos_ult_seq;
 #endif
 
 /**
@@ -413,11 +413,14 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 	//Duplicates check
 	#ifdef CHECK_DUPLICATES
 	{
+		if(ult_seq == NULL)
+			ult_seq = (char *)malloc(sizeof(char) * output_data->num_cycles);
+
 		if(l_ult_seq)
 		{
 			if(pos_ult_seq == init_pos && l_ult_seq == bam_seq_l && strcmp(bam_seq, ult_seq) == 0)
 			{
-				//printf("\nDUPLICATE POS: %d CYCLES: %d\n\tSEQ:  %s\n\tLAST: %s", init_pos, cycles, bam_seq, ult_seq);
+				//LOG_WARN_F("\nDUPLICATE POS: %d CYCLES: %d\n\tSEQ:  %s\n\tLAST: %s", init_pos, bam_seq_l, bam_seq, ult_seq);
 				duplicated++;
 				return NO_ERROR;
 			}
@@ -492,7 +495,7 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 	#ifdef CHECK_DUPLICATES
 	{
 		strcpy(ult_seq, bam_seq);
-		l_ult_seq = alig->core.l_qseq;
+		l_ult_seq = read->core.l_qseq;
 		pos_ult_seq = init_pos;
 	}
 	#endif
