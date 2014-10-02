@@ -41,7 +41,7 @@ recal_get_estimated_Q(U_BASES *v_bases, size_t count, U_QUALS start_quality, dou
 	for(i = count-1; i >= 0; i--)
 	{
 		quality = (U_QUALS)i + start_quality;	/* Get quality for this component*/
-		err0 = (double)v_bases[i] * pow(10.0, (-((double)quality)*0.1));	/* Calculate error based in count of bases and what quality have */
+		err0 = (double)v_bases[i] * Pvalue(quality); /* Calculate error based in count of bases and what quality have */
 		//Increment global counters
 		total_sum += err0;
 		total_bases = total_bases + v_bases[i];
