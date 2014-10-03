@@ -513,7 +513,7 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 	{
 		strcpy(ult_seq, bam_seq);
 		l_ult_seq = read->core.l_qseq;
-		pos_ult_seq = init_pos;
+		pos_ult_seq = read->core.pos;
 	}
 	#endif
 
