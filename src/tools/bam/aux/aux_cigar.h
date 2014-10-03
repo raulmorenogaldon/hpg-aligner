@@ -158,6 +158,17 @@ EXTERNC ERROR_CODE cigar32_to_string(uint32_t *cigar, size_t cigar_l, char* str_
 EXTERNC ERROR_CODE cigar32_create_ref(uint32_t *cigar, size_t cigar_l, char *ref, size_t ref_l, char *read, size_t read_l, char *new_ref, size_t *new_ref_l, char *mask);
 
 /**
+ * Create a hardclipped sequence from softclipped bases.
+ * \param[in] cigar Cigar32 of input read sequence.
+ * \param[in] cigar_l Length of input cigar32.
+ * \param[in] read Read sequence.
+ * \param[in] read_l Length of read sequence.
+ * \param[out] new_read Output processed sequence.
+ * \param[out] new_read_l Output processed sequence length.
+ */
+EXTERNC ERROR_CODE cigar32_hardclip_softclips(uint32_t *cigar, size_t cigar_l, char *read, char *quals, size_t read_l, uint32_t *new_cigar, char *new_read, char *new_quals, size_t *new_read_l);
+
+/**
  * Get an array of aux_indel_t representing indels present on a cigar32.  
  * \param[in] ref_pos Cigar32 position on reference sequence. 
  * \param[in] cigar Cigar32 to obtain indels. 

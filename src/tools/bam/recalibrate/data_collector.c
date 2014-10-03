@@ -330,12 +330,15 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 	//U_CYCLES aux_res_seq_l;
 	//U_CYCLES bam_seq_max_l;
 
-
+	uint32_t *read_left_cigar;
+	//uint32_t *read_cigar;
+	size_t ref_disp;
 
 	char *read_seq_ref;
 	size_t read_seq_ref_l;
 	uint32_t misses;
 	size_t read_l;
+	uint32_t tmp_cigar[30];
 
 	//SSE
 
@@ -394,19 +397,27 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 	//Get quals
 	new_quality_from_bam_ref((bam1_t *)read, 0, bam_quals, read->core.l_qseq + 1);
 
+	//Hardclip
+	cigar32_hardclip_softclips(bam1_cigar(read), read->core.n_cigar, bam_seq, bam_quals, read->core.l_qseq, tmp_cigar, bam_seq, bam_quals, NULL);
+
 	//Get cycles and positions
 	//cycles = alig->core.l_qseq;
 	//bam_seq_l = aux_res_seq_l;
-	bam_seq_l = read->core.l_qseq;
+	//bam_seq_l = read->core.l_qseq;
+	bam_seq_l = strlen(bam_seq);
 	if(bam_seq_l == 0)
 	{
 		LOG_WARN_F("Alignment with sequence length zero: %s\n", bam1_qname(read));
 		return NO_ERROR;
 	}
-	init_pos = read->core.pos; //- 100;
+	ref_disp = 100;
+	init_pos = read->core.pos - ref_disp;
 	if(init_pos < 0)
-		init_pos = 0;
-	end_pos = read->core.pos + (bam_seq_l  * 2) + 100;
+	{
+		ref_disp = read->core.pos - abs(init_pos);
+		init_pos = 1;
+	}
+	end_pos = init_pos + (bam_seq_l  * 2) + 100;
 	init_pos_ref = init_pos + RECAL_REFERENCE_CORRECTION_OFFSET;
 	end_pos_ref = end_pos + RECAL_REFERENCE_CORRECTION_OFFSET;
 
@@ -418,7 +429,7 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 
 		if(l_ult_seq)
 		{
-			if(pos_ult_seq == init_pos && l_ult_seq == bam_seq_l && strcmp(bam_seq, ult_seq) == 0)
+			if(pos_ult_seq == read->core.pos && l_ult_seq == bam_seq_l && strcmp(bam_seq, ult_seq) == 0)
 			{
 				//LOG_WARN_F("\nDUPLICATE POS: %d CYCLES: %d\n\tSEQ:  %s\n\tLAST: %s", init_pos, bam_seq_l, bam_seq, ult_seq);
 				duplicated++;
@@ -438,7 +449,7 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 		return NO_ERROR;
 	}
 
-	ref_seq = (char *)malloc(((end_pos - init_pos) + 2) * sizeof(char));
+	ref_seq = (char *)malloc(((end_pos_ref - init_pos_ref) + 2) * sizeof(char));
 	genome_read_sequence_by_chr_index(ref_seq, (flag & BAM_FREVERSE) ? 1 : 0, chr, &init_pos_ref, &end_pos_ref, (genome_t *)ref);
 
 	if((end_pos_ref - init_pos_ref) == 0)
@@ -457,23 +468,29 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 
 	//Get initial clip displacement
 	//cigar32_count_clip_displacement(read_cigar, read->core.n_cigar, &read_disp_clip);
-	cigar32_count_nucleotides_not_clip(bam1_cigar(read), read->core.n_cigar, &read_l);
+	cigar32_count_nucleotides_not_clip(tmp_cigar, read->core.n_cigar, &read_l);
 
 	//Create sequence to compare with reference
 	read_seq_ref = (char *) malloc((read->core.l_qseq + 1) * sizeof(char));
-	cigar32_create_ref(bam1_cigar(read), read->core.n_cigar,
-			ref_seq, (end_pos_ref - init_pos_ref),
-			bam_seq, read->core.l_qseq,
+	cigar32_create_ref(tmp_cigar, read->core.n_cigar,
+			ref_seq + ref_disp, (end_pos_ref - init_pos_ref),
+			bam_seq, strlen(bam_seq),
 			read_seq_ref, &read_seq_ref_l, comp_mask);
 
 	//Correct comparation?
-	if(read_seq_ref_l != read->core.l_qseq)
+	if(read_seq_ref_l != strlen(bam_seq))
 	{
-		LOG_WARN_F("Read-Ref: %d, Read: %d, Not enough reference sequence length\n", read_seq_ref_l, read->core.l_qseq);
+		LOG_WARN_F("Read-Ref: %d, Read: %d, Not enough reference sequence length\n", read_seq_ref_l, strlen(bam_seq));
 	}
 
 	//Get raw score with reference
 	nucleotide_compare(read_seq_ref, bam_seq, read_seq_ref_l, comp_res, &misses);
+
+	/*comp_res[read_seq_ref_l] = '\0';
+	printf("------\nREF:%s\nMIX:%s\nSEQ:%s\nCMP:", ref_seq, read_seq_ref, bam_seq, comp_res);
+	for(i=0;i < read_seq_ref_l; i++)
+		printf("%c", comp_res[i] == 0 ? '0' : '1');
+	getchar();*/
 
 	//Dinucs
 	for(i = 0; i < bam_seq_l; i++)
@@ -496,7 +513,7 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 	{
 		strcpy(ult_seq, bam_seq);
 		l_ult_seq = read->core.l_qseq;
-		pos_ult_seq = init_pos;
+		pos_ult_seq = read->core.pos;
 	}
 	#endif
 

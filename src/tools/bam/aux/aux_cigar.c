@@ -789,6 +789,55 @@ cigar32_create_ref(uint32_t *cigar, size_t cigar_l, char *ref, size_t ref_l, cha
 }
 
 ERROR_CODE
+cigar32_hardclip_softclips(uint32_t *cigar, size_t cigar_l, char *read, char *quals, size_t read_l, uint32_t *new_cigar, char *new_read, char *new_quals, size_t *new_read_l)
+{
+	int length;
+	int c_count, c_type;
+
+	//Setup length
+	length = read_l;
+
+	//Setup cigar
+	if(cigar != new_cigar)
+		memmove(new_cigar, cigar, cigar_l * sizeof(uint32_t));
+
+	//Trim first S cigar
+	c_count = new_cigar[0] >> BAM_CIGAR_SHIFT;	//Get number of bases from cigar
+	c_type = new_cigar[0] & BAM_CIGAR_MASK;	//Get type from cigar
+	if(c_type == BAM_CSOFT_CLIP)
+	{
+		length = length - c_count;
+		if(length <= 0)
+			abort();
+
+		memmove(new_read, read + c_count, length); // Take '\0' into account
+		memmove(new_quals, quals + c_count, length);
+		new_read[length] = '\0';
+		new_quals[length] = '\0';
+
+		new_cigar[0] = (c_count << BAM_CIGAR_SHIFT) + BAM_CHARD_CLIP;
+	}
+
+	//Trim last S cigar
+	c_count = cigar[cigar_l - 1] >> BAM_CIGAR_SHIFT;	//Get number of bases from cigar
+	c_type = cigar[cigar_l - 1] & BAM_CIGAR_MASK;	//Get type from cigar
+	if(c_type == BAM_CSOFT_CLIP)
+	{
+		length = length - c_count;
+		if(length <= 0)
+			abort();
+		read[length] = '\0';
+		quals[length] = '\0';
+		new_cigar[cigar_l - 1] = (c_count << BAM_CIGAR_SHIFT) + BAM_CHARD_CLIP;
+	}
+
+	if(new_read_l)
+		*new_read_l = length;
+
+	return NO_ERROR;
+}
+
+ERROR_CODE
 cigar32_get_indels(size_t ref_pos, uint32_t *cigar, size_t cigar_l, aux_indel_t *out_indels)
 {
 	int i, elem, type, indel_index;
