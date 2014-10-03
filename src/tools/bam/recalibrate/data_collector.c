@@ -114,7 +114,9 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 		ref_disp = read->core.pos - abs(init_pos);
 		init_pos = 1;
 	}
+
 	end_pos = init_pos + (bam_seq_l  * 4) + 100;
+
 	init_pos_ref = init_pos + RECAL_REFERENCE_CORRECTION_OFFSET;
 	end_pos_ref = end_pos + RECAL_REFERENCE_CORRECTION_OFFSET;
 
