@@ -99,7 +99,9 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 	//bam_seq_l = aux_res_seq_l;
 	//bam_seq_l = read->core.l_qseq;
 	bam_seq_l = strlen(bam_seq);
+
 	//LOG_WARN_F("HCP:%3d - %s\n", bam_seq_l, bam_seq);
+
 	if(bam_seq_l == 0)
 	{
 		LOG_WARN_F("Alignment with sequence length zero: %s\n", bam1_qname(read));
@@ -228,7 +230,7 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 	{
 		strcpy(ult_seq, bam_seq);
 		l_ult_seq = read->core.l_qseq;
-		pos_ult_seq = init_pos;
+		pos_ult_seq = read->core.pos;
 	}
 	#endif
 
