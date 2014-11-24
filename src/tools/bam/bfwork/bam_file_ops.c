@@ -292,7 +292,7 @@ alig_recal_bam_file(const char *bam_path, const char *ref_path, const char *data
 	bfwork_init(&fwork);
 
 	//Configure framework
-	bfwork_configure(&fwork, bam_path, outbam, ref_path, NULL);
+	bfwork_configure(&fwork, bam_path, NULL, ref_path, NULL);
 
 	//Create data realign and collection context
 	bfwork_context_init(&realign_context,
@@ -302,7 +302,7 @@ alig_recal_bam_file(const char *bam_path, const char *ref_path, const char *data
 			&info
 	);
 	bfwork_context_add_proc(&realign_context, (int (*)(void *, bam_region_t *))recalibrate_collect_processor);
-	bfwork_context_set_output(&realign_context, NULL);
+	bfwork_context_set_output(&realign_context, outbam);
 
 	//Create recalibration context
 	bfwork_context_init(&recal_context,

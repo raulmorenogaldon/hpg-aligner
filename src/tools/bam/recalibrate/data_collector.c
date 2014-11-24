@@ -82,6 +82,14 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 	}
 	collect_env->prev_read = read;
 
+	//Check duplicate
+	if(prev_read)
+	{
+		if(prev_read->core.tid == read->core.tid && prev_read->core.pos == read->core.pos)
+			return NO_ERROR;
+	}
+	collect_env->prev_read = read;
+
 	//Get sequence
 	new_sequence_from_bam_ref((bam1_t *)read, bam_seq, read->core.l_qseq + 1);
 

@@ -520,6 +520,12 @@ filter_read(bam1_t *read, uint8_t filters)
 			if((read->core.flag & BAM_FUNMAP) || read->core.tid < 0)
 				return FILTER_UNMAP;
 		}
+
+		if(filters & FILTER_UNMAP)
+		{
+			if(read->core.flag & BAM_FUNMAP)
+				return FILTER_UNMAP;
+		}
 	}
 
 	return NO_ERROR;
