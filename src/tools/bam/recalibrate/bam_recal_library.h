@@ -233,34 +233,6 @@ EXTERNC ERROR_CODE recal_get_dinuc(const char A, const char B, U_DINUC *out_dinu
  **********************************************/
 
 /**
- * \brief Get recalibration data from BAM path.
- *
- * \param bam_path Path to BAM.
- * \param ref_name String with the name of the reference genome.
- * \param ref_path Path to reference.
- * \param out_info Data struct to fill.
- */
-EXTERNC ERROR_CODE recal_get_data_from_file(const char *bam_path, const char *ref_name, const char *ref_path, recal_info_t *out_info) __ATTR_DEPRECATED;
-
-/**
- * \brief Get recalibration data from BAM file.
- *
- * \param bam BAM file struct to process.
- * \param ref Reference genome struct.
- * \param out_info Data struct to fill.
- */
-EXTERNC ERROR_CODE recal_get_data_from_bam(const bam_file_t *bam, const genome_t* ref, recal_info_t* output_data);
-
-/**
- * \brief Get recalibration data from BAM batch of alignments.
- *
- * \param batch BAM batch struct to process.
- * \param ref Reference genome struct.
- * \param out_info Data struct to fill.
- */
-EXTERNC ERROR_CODE recal_get_data_from_bam_batch(const bam_batch_t* batch, const genome_t* ref, recal_info_t* output_data);
-
-/**
  * \brief Get recalibration data from alignment.
  *
  * \param batch BAM alignment struct to process.
@@ -273,33 +245,6 @@ EXTERNC ERROR_CODE recal_get_data_from_bam_alignment(const bam1_t* alig, const g
 /***********************************************
  * BAM RECALIBRATION PHASE 2 - RECALIBRATION
  **********************************************/
-
-/**
- * \brief Recalibrate BAM file from path and store in file.
- *
- * \param orig_bam_path Path to BAM which will be recalibrated.
- * \param bam_info Data struct with recalibration info.
- * \param recal_bam_path Path to output BAM.
- */
-EXTERNC ERROR_CODE recal_recalibrate_bam_file(const char *orig_bam_path, const recal_info_t *bam_info, const char *recal_bam_path) __ATTR_DEPRECATED;
-
-/**
- * \brief Recalibrate BAM file and store in file.
- *
- * \param orig_bam_f BAM file struct to recalibrate.
- * \param bam_info Data struct with recalibration info.
- * \param recal_bam_f Recalibrated BAM output file struct.
- */
-EXTERNC ERROR_CODE recal_recalibrate_bam(const bam_file_t *orig_bam_f, const recal_info_t *bam_info, bam_file_t *recal_bam_f);
-
-/**
- * \brief Recalibrate BAM batch of alignments and store in file.
- *
- * \param batch Batch struct to recalibrate.
- * \param bam_info Data struct with recalibration info.
- * \param recal_bam_f Recalibrated BAM output file struct.
- */
-EXTERNC ERROR_CODE recal_recalibrate_batch(const bam_batch_t* batch, const recal_info_t *bam_info);
 
 /**
  * \brief Recalibrate alignment and store in file.

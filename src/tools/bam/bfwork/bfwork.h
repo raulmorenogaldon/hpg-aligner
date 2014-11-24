@@ -48,8 +48,10 @@
 #define FILTER_ZERO_QUAL 1
 #define FILTER_DIFF_MATE_CHROM 2
 #define FILTER_NO_CIGAR 4
-#define FILTER_DEF_MASK 8
-#define FILTER_UNMAP 16
+#define FILTER_UNMAP 8
+#define FILTER_SECONDARY 16
+#define FILTER_FQCFAIL 32
+#define FILTER_DUP 64
 
 /**
  * WANDERING FUNCTION DEFINITION
@@ -495,15 +497,27 @@ filter_read(bam1_t *read, uint8_t filters)
 				return FILTER_NO_CIGAR;
 		}
 
-		if(filters & FILTER_DEF_MASK)
+		if(filters & FILTER_SECONDARY)
 		{
-			if(read->core.flag & BAM_DEF_MASK)
-				return FILTER_DEF_MASK;
+			if(read->core.flag & BAM_FSECONDARY)
+				return FILTER_SECONDARY;
+		}
+
+		if(filters & FILTER_FQCFAIL)
+		{
+			if(read->core.flag & BAM_FQCFAIL)
+				return FILTER_FQCFAIL;
+		}
+
+		if(filters & FILTER_DUP)
+		{
+			if(read->core.flag & BAM_FDUP)
+				return FILTER_DUP;
 		}
 
 		if(filters & FILTER_UNMAP)
 		{
-			if(read->core.flag & BAM_FUNMAP)
+			if((read->core.flag & BAM_FUNMAP) || read->core.tid < 0)
 				return FILTER_UNMAP;
 		}
 	}

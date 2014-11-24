@@ -271,15 +271,10 @@ recal_bam_file(uint8_t flags, const char *bam_path, const char *ref, const char 
 ERROR_CODE
 alig_recal_bam_file(const char *bam_path, const char *ref_path, const char *data_file, const char *info_file, const char *outbam, int cycles, const char *stats_path)
 {
-
-
 	//Data
 	recal_info_t info;
 	U_CYCLES aux_cycles;
 	int cycles_param;
-
-	//Times
-
 
 	//Wanderer
 	bam_fwork_t fwork;
@@ -297,7 +292,7 @@ alig_recal_bam_file(const char *bam_path, const char *ref_path, const char *data
 	bfwork_init(&fwork);
 
 	//Configure framework
-	bfwork_configure(&fwork, bam_path, NULL, ref_path, NULL);
+	bfwork_configure(&fwork, bam_path, outbam, ref_path, NULL);
 
 	//Create data realign and collection context
 	bfwork_context_init(&realign_context,
@@ -307,7 +302,7 @@ alig_recal_bam_file(const char *bam_path, const char *ref_path, const char *data
 			&info
 	);
 	bfwork_context_add_proc(&realign_context, (int (*)(void *, bam_region_t *))recalibrate_collect_processor);
-	bfwork_context_set_output(&realign_context, outbam);
+	bfwork_context_set_output(&realign_context, NULL);
 
 	//Create recalibration context
 	bfwork_context_init(&recal_context,
@@ -398,7 +393,7 @@ realigner_wanderer(bam_fwork_t *fwork, bam_region_t *region, bam1_t *read)
 	assert(read);
 
 	//Filter read
-	if(filter_read(read, FILTER_ZERO_QUAL | FILTER_DIFF_MATE_CHROM | FILTER_NO_CIGAR | FILTER_DEF_MASK))
+	if(filter_read(read, FILTER_ZERO_QUAL | FILTER_DIFF_MATE_CHROM | FILTER_NO_CIGAR | FILTER_SECONDARY | FILTER_UNMAP | FILTER_FQCFAIL | FILTER_DUP))
 	{
 		//Read is not valid for process
 		return WANDER_READ_FILTERED;
@@ -517,22 +512,11 @@ recalibrate_wanderer(bam_fwork_t *fwork, bam_region_t *region, bam1_t *read)
 	assert(read);
 
 	//Filter read
-	if(filter_read(read, FILTER_ZERO_QUAL | FILTER_DIFF_MATE_CHROM | FILTER_NO_CIGAR | FILTER_DEF_MASK | FILTER_UNMAP))
+	if(filter_read(read, FILTER_ZERO_QUAL | FILTER_DIFF_MATE_CHROM | FILTER_NO_CIGAR | FILTER_SECONDARY | FILTER_UNMAP | FILTER_FQCFAIL | FILTER_DUP))
 	{
 		//Read is not valid for process
 		return WANDER_READ_FILTERED;
 	}
-
-	//Update region bounds
-	/*if(region->init_pos > read->core.pos)
-	{
-		region->init_pos = read->core.pos;
-		region->chrom = read->core.tid;
-	}
-	if(region->end_pos < read->core.pos)
-	{
-		region->end_pos = read->core.pos;
-	}*/
 
 	return NO_ERROR;
 }

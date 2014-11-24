@@ -15,7 +15,7 @@ dummy_wanderer(bam_fwork_t *fwork, bam_region_t *region, bam1_t *read)
 	assert(read);
 
 	//Filter read
-	if(filter_read(read, FILTER_ZERO_QUAL | FILTER_DIFF_MATE_CHROM | FILTER_NO_CIGAR | FILTER_DEF_MASK))
+	if(filter_read(read, FILTER_ZERO_QUAL | FILTER_DIFF_MATE_CHROM | FILTER_NO_CIGAR | FILTER_SECONDARY | FILTER_UNMAP | FILTER_FQCFAIL | FILTER_DUP))
 	{
 		//Read is not valid for process
 		return WANDER_READ_FILTERED;

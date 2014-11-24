@@ -1126,6 +1126,8 @@ bfwork_obtain_region(bam_fwork_t *fwork, bam_region_t *region)
 		{
 		case WANDER_READ_FILTERED:
 			//This read dont pass the filters
+			read->core.flag |= 2048;
+
 		case NO_ERROR:
 			//Add read to region
 			omp_set_lock(&region->lock);

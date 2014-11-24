@@ -14,20 +14,4 @@
 
 #include "recal_structs.h"
 
-/***********************************************
- * BAM RECALIBRATION PHASE 2 - RECALIBRATION
- **********************************************/
-
-typedef struct batch_out{
-	bam_batch_t *batch;
-	recal_info_t *info;
-} batch_out_t;
-
-/**
- * Private functions
- */
-
-static INLINE void recal_recalibrate_alignment_priv(bam1_t* alig, const recal_info_t *bam_info, recal_recalibration_env_t *recalibration_env);
-
-
 #endif /* BAM_RECAL_H_ */
