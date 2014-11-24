@@ -312,6 +312,7 @@ ERROR_CODE
 recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal_info_t* output_data, recal_data_collect_env_t *collect_env)
 {
 	char *ref_seq;
+	bam1_t *prev_read;
 
 	int64_t init_pos, end_pos;
 	size_t init_pos_ref, end_pos_ref;
@@ -325,13 +326,13 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 	char *bam_seq;
 	char *bam_quals;
 	U_CYCLES bam_seq_l;
-	char *aux_res_seq;
-	char *aux_res_qual;
+	//char *aux_res_seq;
+	//char *aux_res_qual;
 	//U_CYCLES aux_res_seq_l;
 	//U_CYCLES bam_seq_max_l;
 
-	uint32_t *read_left_cigar;
 	//uint32_t *read_cigar;
+	size_t read_disp_clip;
 	size_t ref_disp;
 
 	char *read_seq_ref;
@@ -385,17 +386,29 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 		bam_seq = collect_env->bam_seq;
 		bam_quals = collect_env->bam_quals;
 		bam_seq_l = 0;
-		aux_res_seq = collect_env->aux_res_seq;
-		aux_res_qual = collect_env->aux_res_qual;
+		prev_read = collect_env->prev_read;
+		//aux_res_seq = collect_env->aux_res_seq;
+		//aux_res_qual = collect_env->aux_res_qual;
 		//aux_res_seq_l = 0;
 		//bam_seq_max_l = collect_env->bam_seq_max_l;
 	}
+
+	//Check duplicate
+	if(prev_read)
+	{
+		if(prev_read->core.tid == read->core.tid && prev_read->core.pos == read->core.pos)
+			return NO_ERROR;
+	}
+	collect_env->prev_read = read;
 
 	//Get sequence
 	new_sequence_from_bam_ref((bam1_t *)read, bam_seq, read->core.l_qseq + 1);
 
 	//Get quals
 	new_quality_from_bam_ref((bam1_t *)read, 0, bam_quals, read->core.l_qseq + 1);
+
+	//LOG_WARN("========\n");
+	//LOG_WARN_F("SEQ:%3d - %s\n", read->core.l_qseq, bam_seq);
 
 	//Hardclip
 	cigar32_hardclip_softclips(bam1_cigar(read), read->core.n_cigar, bam_seq, bam_quals, read->core.l_qseq, tmp_cigar, bam_seq, bam_quals, NULL);
@@ -405,6 +418,7 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 	//bam_seq_l = aux_res_seq_l;
 	//bam_seq_l = read->core.l_qseq;
 	bam_seq_l = strlen(bam_seq);
+	//LOG_WARN_F("HCP:%3d - %s\n", bam_seq_l, bam_seq);
 	if(bam_seq_l == 0)
 	{
 		LOG_WARN_F("Alignment with sequence length zero: %s\n", bam1_qname(read));
@@ -417,7 +431,7 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 		ref_disp = read->core.pos - abs(init_pos);
 		init_pos = 1;
 	}
-	end_pos = init_pos + (bam_seq_l  * 2) + 100;
+	end_pos = init_pos + (bam_seq_l  * 4);
 	init_pos_ref = init_pos + RECAL_REFERENCE_CORRECTION_OFFSET;
 	end_pos_ref = end_pos + RECAL_REFERENCE_CORRECTION_OFFSET;
 
@@ -467,7 +481,7 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 	memset(comp_mask, 0, (read->core.l_qseq + 1) * sizeof(char));
 
 	//Get initial clip displacement
-	//cigar32_count_clip_displacement(read_cigar, read->core.n_cigar, &read_disp_clip);
+	//cigar32_count_clip_displacement(tmp_cigar, read->core.n_cigar, &read_disp_clip);
 	cigar32_count_nucleotides_not_clip(tmp_cigar, read->core.n_cigar, &read_l);
 
 	//Create sequence to compare with reference
@@ -476,6 +490,7 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 			ref_seq + ref_disp, (end_pos_ref - init_pos_ref),
 			bam_seq, strlen(bam_seq),
 			read_seq_ref, &read_seq_ref_l, comp_mask);
+	//LOG_WARN_F("REF:%3d - %s\n", strlen(read_seq_ref), read_seq_ref);
 
 	//Correct comparation?
 	if(read_seq_ref_l != strlen(bam_seq))
@@ -486,11 +501,22 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 	//Get raw score with reference
 	nucleotide_compare(read_seq_ref, bam_seq, read_seq_ref_l, comp_res, &misses);
 
-	/*comp_res[read_seq_ref_l] = '\0';
-	printf("------\nREF:%s\nMIX:%s\nSEQ:%s\nCMP:", ref_seq, read_seq_ref, bam_seq, comp_res);
+	//Avoid N nucleotides
+	#ifdef NOT_COUNT_NUCLEOTIDE_N
+	for(i = 0; i < read_seq_ref_l; i++)
+	{
+		if(read_seq_ref[i] == 'N')
+		{
+			misses--;
+			comp_mask[i] = 0;
+		}
+	}
+	#endif
+
+	/*LOG_WARN_F("CMP:%3d - ", read_seq_ref_l);
 	for(i=0;i < read_seq_ref_l; i++)
-		printf("%c", comp_res[i] == 0 ? '0' : '1');
-	getchar();*/
+		fprintf(log_file, "%c", comp_res[i] == 0 ? '0' : '1');
+	fprintf(log_file, "\n");*/
 
 	//Dinucs
 	for(i = 0; i < bam_seq_l; i++)
@@ -507,6 +533,14 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 
 	//Add data
 	recal_add_base_v(output_data, bam_seq, bam_quals, 0, bam_seq_l, dinucs, comp_res, comp_mask);
+	/*LOG_WARN_F("MSK:%3d - ", bam_seq_l);
+		for(i=0;i < bam_seq_l; i++)
+			fprintf(log_file, "%c", comp_mask[i] == 0 ? '0' : '1');
+		fprintf(log_file, "\n");
+	LOG_WARN_F("MSS:%3d - ", bam_seq_l);
+			for(i=0;i < bam_seq_l; i++)
+				fprintf(log_file, "%c", comp_res[i] == 0 ? '0' : '1');
+			fprintf(log_file, "\n");*/
 
 	//Set last sequence for duplicates
 	#ifdef CHECK_DUPLICATES

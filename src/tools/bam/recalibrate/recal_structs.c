@@ -176,6 +176,8 @@ recal_get_data_init_env(const U_CYCLES cycles, recal_data_collect_env_t *collect
 	if(!collect_env)
 		return INVALID_INPUT_PARAMS_NULL;
 
+	memset(collect_env, 0, sizeof(recal_data_collect_env_t));
+
 	//Sequence storage
 	collect_env->bam_seq = (char *) _mm_malloc (sizeof(char) * cycles, MEM_ALIG_SSE_SIZE);
 	collect_env->bam_quals = (char *) _mm_malloc (sizeof(char) * cycles, MEM_ALIG_SSE_SIZE);
@@ -205,7 +207,7 @@ recal_get_data_destroy_env(recal_data_collect_env_t *collect_env)
 	free(collect_env->aux_res_seq);
 	free(collect_env->aux_res_qual);
 
-	free(collect_env);
+	//free(collect_env);
 
 	return NO_ERROR;
 }
@@ -353,7 +355,7 @@ recal_add_base_v(recal_info_t *data, const char *seq, const char *quals, const U
 				break;
 
 			default:
-				//printf("ERROR: Corrupted nucleotide read = %c\n", seq[i]);
+				//LOG_WARN_F("ERROR: Corrupted nucleotide read = %c\n", seq[i]);
 				break;
 			}
 		}

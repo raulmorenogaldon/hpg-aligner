@@ -224,7 +224,7 @@ recal_bam_file(uint8_t flags, const char *bam_path, const char *ref, const char 
 			recal_fprint_info(&info, info_file);
 		}
 
-		bfwork_context_local_user_data_free(&collect_context, recalibrate_destroy_data);
+		bfwork_context_local_user_data_free(&collect_context, recal_get_data_destroy_env);
 
 #ifdef D_TIME_DEBUG
 		//Print times
@@ -297,7 +297,7 @@ alig_recal_bam_file(const char *bam_path, const char *ref_path, const char *data
 	bfwork_init(&fwork);
 
 	//Configure framework
-	bfwork_configure(&fwork, bam_path, outbam, ref_path, NULL);
+	bfwork_configure(&fwork, bam_path, NULL, ref_path, NULL);
 
 	//Create data realign and collection context
 	bfwork_context_init(&realign_context,
@@ -307,7 +307,7 @@ alig_recal_bam_file(const char *bam_path, const char *ref_path, const char *data
 			&info
 	);
 	bfwork_context_add_proc(&realign_context, (int (*)(void *, bam_region_t *))recalibrate_collect_processor);
-	bfwork_context_set_output(&realign_context, NULL);
+	bfwork_context_set_output(&realign_context, outbam);
 
 	//Create recalibration context
 	bfwork_context_init(&recal_context,
@@ -349,7 +349,7 @@ alig_recal_bam_file(const char *bam_path, const char *ref_path, const char *data
 	}
 
 	//Free local data
-	bfwork_context_local_user_data_free(&realign_context, recalibrate_destroy_data);
+	bfwork_context_local_user_data_free(&realign_context, recal_get_data_destroy_env);
 	bfwork_context_local_user_data_free(&recal_context, recalibrate_destroy_data);
 
 #ifdef D_TIME_DEBUG
@@ -517,14 +517,14 @@ recalibrate_wanderer(bam_fwork_t *fwork, bam_region_t *region, bam1_t *read)
 	assert(read);
 
 	//Filter read
-	if(filter_read(read, FILTER_ZERO_QUAL | FILTER_DIFF_MATE_CHROM | FILTER_NO_CIGAR | FILTER_DEF_MASK))
+	if(filter_read(read, FILTER_ZERO_QUAL | FILTER_DIFF_MATE_CHROM | FILTER_NO_CIGAR | FILTER_DEF_MASK | FILTER_UNMAP))
 	{
 		//Read is not valid for process
 		return WANDER_READ_FILTERED;
 	}
 
 	//Update region bounds
-	if(region->init_pos > read->core.pos)
+	/*if(region->init_pos > read->core.pos)
 	{
 		region->init_pos = read->core.pos;
 		region->chrom = read->core.tid;
@@ -532,7 +532,7 @@ recalibrate_wanderer(bam_fwork_t *fwork, bam_region_t *region, bam1_t *read)
 	if(region->end_pos < read->core.pos)
 	{
 		region->end_pos = read->core.pos;
-	}
+	}*/
 
 	return NO_ERROR;
 }
@@ -548,8 +548,8 @@ recalibrate_collect_processor(bam_fwork_t *fwork, bam_region_t *region)
 	recal_info_t *data;
 
 	//Get data
-	bfwork_local_user_data(fwork, (void **)&data);
-	if(data == NULL)
+	bfwork_local_user_data(fwork, (void **)&collect_env);
+	if(collect_env == NULL)
 	{
 		//Local data is not initialized
 		data = (recal_info_t *)malloc(sizeof(recal_info_t));
@@ -559,13 +559,15 @@ recalibrate_collect_processor(bam_fwork_t *fwork, bam_region_t *region)
 		recal_init_info(*cycles, data);
 		bfwork_unlock_user_data(fwork);
 
-		//Set local data
-		bfwork_local_user_data_set(fwork, data);
-	}
+		//Initialize get data environment
+		collect_env = (recal_data_collect_env_t *) malloc(sizeof(recal_data_collect_env_t));
+		recal_get_data_init_env(data->num_cycles, collect_env);
+		collect_env->data = data;
 
-	//Initialize get data environment
-	collect_env = (recal_data_collect_env_t *) malloc(sizeof(recal_data_collect_env_t));
-	recal_get_data_init_env(data->num_cycles, collect_env);
+		//Set local data
+		bfwork_local_user_data_set(fwork, collect_env);
+	}
+	data = collect_env->data;
 
 	//Obtain data from all reads in region
 	for(i = 0; i < region->size; i++)
@@ -579,9 +581,6 @@ recalibrate_collect_processor(bam_fwork_t *fwork, bam_region_t *region)
 		recal_get_data_from_bam_alignment(read, fwork->reference, data, collect_env);
 		omp_unset_lock(&fwork->reference_lock);
 	}
-
-	//Destroy environment
-	recal_get_data_destroy_env(collect_env);
 
 	return NO_ERROR;
 }
@@ -649,11 +648,13 @@ void
 recalibrate_reduce_data(void *dest, void *data)
 {
 	recal_info_t *data_ptr, *dest_ptr;
+	recal_data_collect_env_t *env;
 	assert(data);
 	assert(dest);
 
 	//Cast pointers
-	data_ptr = (recal_info_t *)data;
+	env = (recal_data_collect_env_t *)data;
+	data_ptr = env->data;
 	dest_ptr = (recal_info_t *)dest;
 
 	//Combine

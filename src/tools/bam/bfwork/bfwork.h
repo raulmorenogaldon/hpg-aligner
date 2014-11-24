@@ -49,6 +49,7 @@
 #define FILTER_DIFF_MATE_CHROM 2
 #define FILTER_NO_CIGAR 4
 #define FILTER_DEF_MASK 8
+#define FILTER_UNMAP 16
 
 /**
  * WANDERING FUNCTION DEFINITION
@@ -498,6 +499,12 @@ filter_read(bam1_t *read, uint8_t filters)
 		{
 			if(read->core.flag & BAM_DEF_MASK)
 				return FILTER_DEF_MASK;
+		}
+
+		if(filters & FILTER_UNMAP)
+		{
+			if(read->core.flag & BAM_FUNMAP)
+				return FILTER_UNMAP;
 		}
 	}
 

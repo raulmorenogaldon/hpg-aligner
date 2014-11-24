@@ -20,6 +20,11 @@ struct data_collect_env {
 	//Maximum length
 	U_CYCLES bam_seq_max_l;
 
+	//Data
+	recal_info_t *data;
+
+	//Previous read
+	bam1_t *prev_read;
 };
 
 struct recalibration_env {
