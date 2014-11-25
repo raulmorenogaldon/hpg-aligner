@@ -713,7 +713,7 @@ cigar32_create_ref(uint32_t *cigar, size_t cigar_l, char *ref, size_t ref_l, cha
 		{
 		case BAM_CSOFT_CLIP:
 		case BAM_CINS:	//Insertion
-			if(index_read + elem > read_l)
+			if(index_read + elem >= read_l)
 				elem = read_l - index_read;
 			//Copy insertion in aux
 			memcpy(aux_str + index_aux, read + index_read, elem);
@@ -722,7 +722,7 @@ cigar32_create_ref(uint32_t *cigar, size_t cigar_l, char *ref, size_t ref_l, cha
 			index_aux += elem;
 			break;
 		case BAM_CDEL:	//Deletion
-			if(index_ref + elem > ref_l)
+			if(index_ref + elem >= ref_l)
 				elem = ref_l - index_ref;
 			//Increment index on reference to skip deletion
 			//printf("D:%d-%d-%d\n", index_read, index_ref, index_aux);
@@ -732,9 +732,9 @@ cigar32_create_ref(uint32_t *cigar, size_t cigar_l, char *ref, size_t ref_l, cha
 		case BAM_CMATCH:
 		case BAM_CDIFF:
 		case BAM_CEQUAL:
-			if(index_ref + elem > ref_l)
+			if(index_ref + elem >= ref_l)
 				elem = ref_l - index_ref;
-			if(index_read + elem > read_l)
+			if(index_read + elem >= read_l)
 				elem = read_l - index_read;
 			//Copy reference as it is
 			memcpy(aux_str + index_aux, ref + index_ref, elem);

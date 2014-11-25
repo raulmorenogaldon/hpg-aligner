@@ -112,7 +112,7 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 		ref_disp = read->core.pos - abs(init_pos);
 		init_pos = 1;
 	}
-	end_pos = init_pos + (bam_seq_l  * 4);
+	end_pos = init_pos + (bam_seq_l  * 4) + 100;
 	init_pos_ref = init_pos + RECAL_REFERENCE_CORRECTION_OFFSET;
 	end_pos_ref = end_pos + RECAL_REFERENCE_CORRECTION_OFFSET;
 
@@ -168,7 +168,7 @@ recal_get_data_from_bam_alignment(const bam1_t* read, const genome_t* ref, recal
 	//Create sequence to compare with reference
 	read_seq_ref = (char *) malloc((read->core.l_qseq + 1) * sizeof(char));
 	cigar32_create_ref(tmp_cigar, read->core.n_cigar,
-			ref_seq + ref_disp, (end_pos_ref - init_pos_ref),
+			ref_seq + ref_disp, strlen(ref_seq) - ref_disp,
 			bam_seq, strlen(bam_seq),
 			read_seq_ref, &read_seq_ref_l, comp_mask);
 	//LOG_WARN_F("REF:%3d - %s\n", strlen(read_seq_ref), read_seq_ref);

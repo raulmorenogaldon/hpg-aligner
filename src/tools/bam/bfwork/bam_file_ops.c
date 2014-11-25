@@ -553,6 +553,9 @@ recalibrate_collect_processor(bam_fwork_t *fwork, bam_region_t *region)
 	}
 	data = collect_env->data;
 
+	//This pointer is no longer valid
+	collect_env->prev_read = NULL;
+
 	//Obtain data from all reads in region
 	for(i = 0; i < region->size; i++)
 	{
